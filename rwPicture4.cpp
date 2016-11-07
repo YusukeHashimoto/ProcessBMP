@@ -7,10 +7,10 @@ using namespace std;
 const long SIZE = 1000000;
 const char* DEFAULT_NAME = "newFile.bmp";
 const int BEGINNING_OF_CONTENT = 54;
+const double K = 1;
 
-void sharpen();
 int readImage(char*);
-
+int limitRange(int);
 
 unsigned char image[SIZE];
 
@@ -38,6 +38,7 @@ public:
 };
 
 void writeImage(int, Header);
+void sharpen(Header);
 
 class Pixel {
   int r;
@@ -45,6 +46,10 @@ class Pixel {
   int b;
 public:
   void setRGB(int r, int g, int b) {
+	limitRange(r);
+	limitRange(g);
+	limitRange(b);
+	
     this->r = r;
     this->g = g;
     this->b = b;
@@ -74,6 +79,8 @@ int main(int argc, char* argv[]) {
 	  pixels[x][y].setRGB(image[i+2], image[i+1], image[i]);
 	}
   }
+
+  sharpen(header);
   
   writeImage(size, header);
   return 0;
@@ -89,10 +96,12 @@ int readImage(char* filename) {
   return i;
 }
 
+Pixel sharpenedPixels[5000][5000];
+
 void writeImage(int filesize, Header header) {
   FILE *fp = fopen(DEFAULT_NAME, "wb");
   /*
-  for(int i = 0; i < filesize; i++) {
+	for(int i = 0; i < filesize; i++) {
     fputc(image[i], fp);
 	}*/
   for(int i = 0; i < BEGINNING_OF_CONTENT; i++) {
@@ -104,14 +113,66 @@ void writeImage(int filesize, Header header) {
   
   for(int y = 0; y < height; y++) {
 	for(int x = 0; x < width; x++) {
-	  fputc(pixels[x][y].getB(), fp);
-	  fputc(pixels[x][y].getG(), fp);
-	  fputc(pixels[x][y].getR(), fp);
+	  /*
+		fputc(pixels[x][y].getB(), fp);
+		fputc(pixels[x][y].getG(), fp);
+		fputc(pixels[x][y].getR(), fp);
+	  */
+	  fputc(sharpenedPixels[x][y].getB(), fp);
+	  fputc(sharpenedPixels[x][y].getG(), fp);
+	  fputc(sharpenedPixels[x][y].getR(), fp);
 	}
   }
   
   fclose(fp);
 }
 
-void sharpen() {
+void sharpen(Header header) {
+  int width = header.getWidth();
+  int height = header.getHeight();
+  
+  for(int y = 0; y < height; y++) {
+	for(int x = 0; x < width; x++) {
+	  if(y == 0 || y == height-1 || x == 0 || x == width-1) {
+		sharpenedPixels[x][y].setRGB(pixels[x][y].getR(),
+									 pixels[x][y].getG(),
+									 pixels[x][y].getB());
+	  } else {
+		double r = (4.0 * pixels[x][y].getR() * K) + 1.0
+		  - (pixels[x-1][y].getR() * K)
+		  - (pixels[x+1][y].getR() * K)
+		  - (pixels[x][y-1].getR() * K)
+		  - (pixels[x][y+1].getR() * K);
+		  
+		double g = 4.0 * pixels[x][y].getG() * K + 1.0
+		  - pixels[x-1][y].getG() * K
+		  - pixels[x+1][y].getG() * K
+		  - pixels[x][y-1].getG() * K
+		  - pixels[x][y+1].getG() * K;
+		
+		double b = 4.0 * pixels[x][y].getB() * K + 1.0
+		  - pixels[x-1][y].getB() * K
+		  - pixels[x+1][y].getB() * K
+		  - pixels[x][y-1].getB() * K
+		  - pixels[x][y+1].getB() * K;
+
+		//sharpenedPixels[x][y].setRGB(r, g, b);
+		sharpenedPixels[x][y].setRGB(
+									 limitRange(r + pixels[x][y].getR()),
+									 limitRange(g + pixels[x][y].getG()),
+									 limitRange(b + pixels[x][y].getB()));
+		/*
+		  cout << "(" << sharpenedPixels[x][y].getR()
+		  << "," << sharpenedPixels[x][y].getG()
+		  << "," << sharpenedPixels[x][y].getB() << ")" << endl;
+		*/
+	  }
+	}
+  }
+}
+
+int limitRange(int n) {
+  if(n < 0) return 0;
+  if(n > 255) return 255;
+  return n;
 }
