@@ -23,17 +23,31 @@ public:
     for(int i = 0; i < BEGINNING_OF_CONTENT; i++) {
       binary[i] = image[i];
     }
-    char value[8];
-    sprintf(value, "%02d%02d%02d%02d", image[21], image[20], image[19], image[18]);
-    width = std::stoi(value, 0, 16);
-    sprintf(value, "%02d%02d%02d%02d", image[25], image[24], image[23], image[22]);
-    height = std::stoi(value, 0, 16);
+    char hexValue[8];
+    sprintf(hexValue, "%02d%02d%02d%02d", image[21], image[20], image[19], image[18]);
+    width = std::stoi(hexValue, 0, 16);
+    sprintf(hexValue, "%02d%02d%02d%02d", image[25], image[24], image[23], image[22]);
+    height = std::stoi(hexValue, 0, 16);
   }
   int getWidth() { return width; }
   int getHeight(){ return height; }
 };
 
-
+class Pixel {
+  int r;
+  int g;
+  int b;
+public:
+  void setRGB(int r, int g, int b) {
+    this->r = r;
+    this->g = g;
+    this->b = b;
+  }
+  int getR() { return r; }
+  int getG() { return g; }
+  int getB() { return b; }
+  int getY() { return 0; }
+};
 
 int main(int argc, char* argv[]) {
   int size = readImage(argv[1]);
@@ -42,7 +56,19 @@ int main(int argc, char* argv[]) {
   cout << header.getWidth() << endl;
   cout << header.getHeight() << endl;
   cout << size << endl;
-  
+
+  //  Pixel binary[header.getWidth()][header.getHeight()];
+  Pixel p[500][500];
+  /*
+  int i = 0;
+  for(int y = 0; y < header.getHeight(); y++) {
+    for(int x = 0; x < header.getWidth(); x++) {
+      //binary[x][y].setRGB(i+2, i+1, i);
+      i += 3;
+      cout << "(" << x << ", " << y << ")" << endl;
+    }
+  }
+  */
   writeImage(size);
   return 0;
 }
@@ -67,29 +93,3 @@ void writeImage(int filesize) {
 
 void sharpen() {
 }
-/*
-class Header {
-  unsigned char binary[BEGINNING_OF_CONTENT];
-  //int width;
-  int height;
-
-public:
-  //Header(unsigned char image[SIZE]) {
-  Header() {
-    for(int i = 0; i < BEGINNING_OF_CONTENT; i++) {
-      binary[i] = image[i];
-    }
-    char width[8];
-    sprintf(width, "%02d%02d%02d%02d", image[21], image[20], image[19], image[18]);
-    //cout << stoi(width, 0, 16) << endl;
-  }
-  long getHeight() { return height; }
-  //long getWidth() { return width; }
-};
-
-class Sample {
-public:
-
-};
-
-*/
