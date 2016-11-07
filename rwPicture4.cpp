@@ -2,80 +2,49 @@
 #include <iostream>
 #include <string>
 
-using namespace std;
+#include "const.hpp"
+#include "header.hpp"
+#include "pixel.hpp"
 
-const long SIZE = 1000000;
-const char* DEFAULT_NAME = "newFile.bmp";
-const int BEGINNING_OF_CONTENT = 54;
-const double K = 1;
+using namespace std;
 
 int readImage(char*);
 int limitRange(int);
-
-unsigned char image[SIZE];
-
-class Header {
-  unsigned char binary[SIZE];
-  int width;
-  int height;
-public:
-  Header(int size) {
-
-    for(int i = 0; i < BEGINNING_OF_CONTENT; i++) {
-      binary[i] = image[i];
-    }
-
-    char value[16];
-    sprintf(value, "%02x%02x%02x%02x", image[21], image[20], image[19], image[18]);
-    width = std::stoi(value, 0, 16);
-    sprintf(value, "%02x%02x%02x%02x", image[25], image[24], image[23], image[22]);
-    height = std::stoi(value, 0, 16);
-  }
-  
-  int getWidth() { return width; }
-  int getHeight(){ return height; }
-  unsigned char* getBinary() { return binary; }
-};
-
 void writeImage(int, Header);
 void sharpen(Header);
 
-class Pixel {
-  int r;
-  int g;
-  int b;
-public:
-  void setRGB(int r, int g, int b) {
-	limitRange(r);
-	limitRange(g);
-	limitRange(b);
-	
-    this->r = r;
-    this->g = g;
-    this->b = b;
-  }
-  unsigned char getR() { return r; }
-  unsigned char getG() { return g; }
-  unsigned char getB() { return b; }
-  int getY() {
-	return 0.299 * r + 0.587 * g + 0.114 * b;
-  }
-};
+Header::Header(int size, unsigned char image[]) {
+  for(int i = 0; i < SIZE_OF_HEADER; i++) {
+      binary[i] = image[i];
+    }
+  
+  char value[16];
+  sprintf(value, "%02x%02x%02x%02x", image[21], image[20], image[19], image[18]);
+  width = std::stoi(value, 0, 16);
+  sprintf(value, "%02x%02x%02x%02x", image[25], image[24], image[23], image[22]);
+  height = std::stoi(value, 0, 16);
+}
 
-Pixel pixels[5000][5000];
+void Pixel::setRGB(int r, int g, int b) {
+  this->r = limitRange(r);
+  this->g = limitRange(g);
+  this->b = limitRange(b);
+}
+
+unsigned char image[MAX_SIZE];
+Pixel pixels[MAX_WIDTH][MAX_HEIGHT];
+Pixel sharpenedPixels[MAX_WIDTH][MAX_HEIGHT];
+double k = 1;
 
 int main(int argc, char* argv[]) {
   int size = readImage(argv[1]);
+  if(argc > 2) k = atoi(argv[2]);
   
-  Header header(size);
-
-  cout << header.getWidth() << endl;
-  cout << header.getHeight() << endl;
-  cout << size << endl;
+  Header header(size, image);
 
   for(int y = 0; y < header.getHeight(); y++) {
 	for(int x = 0; x < header.getWidth(); x++) {
-	  int i = BEGINNING_OF_CONTENT + (y * header.getWidth() + x) * 3;
+	  int i = SIZE_OF_HEADER + (y * header.getWidth() + x) * 3;
 	  pixels[x][y].setRGB(image[i+2], image[i+1], image[i]);
 	}
   }
@@ -96,15 +65,10 @@ int readImage(char* filename) {
   return i;
 }
 
-Pixel sharpenedPixels[5000][5000];
-
 void writeImage(int filesize, Header header) {
   FILE *fp = fopen(DEFAULT_NAME, "wb");
-  /*
-	for(int i = 0; i < filesize; i++) {
-    fputc(image[i], fp);
-	}*/
-  for(int i = 0; i < BEGINNING_OF_CONTENT; i++) {
+  
+  for(int i = 0; i < SIZE_OF_HEADER; i++) {
 	fputc(header.getBinary()[i], fp);
   }
 
@@ -113,17 +77,11 @@ void writeImage(int filesize, Header header) {
   
   for(int y = 0; y < height; y++) {
 	for(int x = 0; x < width; x++) {
-	  /*
-		fputc(pixels[x][y].getB(), fp);
-		fputc(pixels[x][y].getG(), fp);
-		fputc(pixels[x][y].getR(), fp);
-	  */
 	  fputc(sharpenedPixels[x][y].getB(), fp);
 	  fputc(sharpenedPixels[x][y].getG(), fp);
 	  fputc(sharpenedPixels[x][y].getR(), fp);
 	}
   }
-  
   fclose(fp);
 }
 
@@ -138,34 +96,28 @@ void sharpen(Header header) {
 									 pixels[x][y].getG(),
 									 pixels[x][y].getB());
 	  } else {
-		double r = (4.0 * pixels[x][y].getR() * K) + 1.0
-		  - (pixels[x-1][y].getR() * K)
-		  - (pixels[x+1][y].getR() * K)
-		  - (pixels[x][y-1].getR() * K)
-		  - (pixels[x][y+1].getR() * K);
+		double r = (4.0 * pixels[x][y].getR() * k) + 1.0
+		  - (pixels[x-1][y].getR() * k)
+		  - (pixels[x+1][y].getR() * k)
+		  - (pixels[x][y-1].getR() * k)
+		  - (pixels[x][y+1].getR() * k)
+		  + pixels[x][y].getR();
 		  
-		double g = 4.0 * pixels[x][y].getG() * K + 1.0
-		  - pixels[x-1][y].getG() * K
-		  - pixels[x+1][y].getG() * K
-		  - pixels[x][y-1].getG() * K
-		  - pixels[x][y+1].getG() * K;
+		double g = 4.0 * pixels[x][y].getG() * k + 1.0
+		  - pixels[x-1][y].getG() * k
+		  - pixels[x+1][y].getG() * k
+		  - pixels[x][y-1].getG() * k
+		  - pixels[x][y+1].getG() * k
+		  + pixels[x][y].getG();
 		
-		double b = 4.0 * pixels[x][y].getB() * K + 1.0
-		  - pixels[x-1][y].getB() * K
-		  - pixels[x+1][y].getB() * K
-		  - pixels[x][y-1].getB() * K
-		  - pixels[x][y+1].getB() * K;
+		double b = 4.0 * pixels[x][y].getB() * k + 1.0
+		  - pixels[x-1][y].getB() * k
+		  - pixels[x+1][y].getB() * k
+		  - pixels[x][y-1].getB() * k
+		  - pixels[x][y+1].getB() * k
+		  + pixels[x][y].getB();
 
-		//sharpenedPixels[x][y].setRGB(r, g, b);
-		sharpenedPixels[x][y].setRGB(
-									 limitRange(r + pixels[x][y].getR()),
-									 limitRange(g + pixels[x][y].getG()),
-									 limitRange(b + pixels[x][y].getB()));
-		/*
-		  cout << "(" << sharpenedPixels[x][y].getR()
-		  << "," << sharpenedPixels[x][y].getG()
-		  << "," << sharpenedPixels[x][y].getB() << ")" << endl;
-		*/
+		sharpenedPixels[x][y].setRGB(limitRange(r), limitRange(g), limitRange(b));
 	  }
 	}
   }
