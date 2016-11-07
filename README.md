@@ -11,5 +11,7 @@ BMP形式の画像を取り込んで加工する
   <dd>画像をグレースケール化</dd>
   <dt>rwPicture3.cpp</dt>
   <dd>画像を緑っぽくする</dd>
+  <dt>rwPicture4.cpp</dt>
+  <dd>先鋭化フィルタ</dd>
 </dl>
 
