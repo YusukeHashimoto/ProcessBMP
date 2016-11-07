@@ -19,26 +19,28 @@ class Header {
   int width;
   int height;
 public:
-  Header() {
-    for(int i = 0; i < BEGINNING_OF_CONTENT; i++) {
-      binary[i] = image[i];
+  Header(int size) {
+
+    for(int i = 0; i < size; i++) {
+      binary[i] = image[i + BEGINNING_OF_CONTENT];
     }
-    char value[8];
+
+    char value[16];
     sprintf(value, "%02d%02d%02d%02d", image[21], image[20], image[19], image[18]);
     width = std::stoi(value, 0, 16);
+		  
     sprintf(value, "%02d%02d%02d%02d", image[25], image[24], image[23], image[22]);
     height = std::stoi(value, 0, 16);
   }
+  
   int getWidth() { return width; }
   int getHeight(){ return height; }
 };
 
-
-
 int main(int argc, char* argv[]) {
   int size = readImage(argv[1]);
   
-  Header header;
+  Header header(size);
   cout << header.getWidth() << endl;
   cout << header.getHeight() << endl;
   cout << size << endl;
