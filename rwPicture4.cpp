@@ -21,8 +21,8 @@ class Header {
 public:
   Header(int size) {
 
-    for(int i = 0; i < size; i++) {
-      binary[i] = image[i + BEGINNING_OF_CONTENT];
+    for(int i = 0; i < BEGINNING_OF_CONTENT; i++) {
+      binary[i] = image[i];
     }
 
     char value[16];
