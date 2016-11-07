@@ -68,11 +68,9 @@ int main(int argc, char* argv[]) {
   cout << header.getHeight() << endl;
   cout << size << endl;
 
-
   for(int y = 0; y < header.getHeight(); y++) {
 	for(int x = 0; x < header.getWidth(); x++) {
-	  int i = y * header.getWidth() + x;
-	  i*=3;
+	  int i = BEGINNING_OF_CONTENT + (y * header.getWidth() + x) * 3;
 	  pixels[x][y].setRGB(image[i+2], image[i+1], image[i]);
 	}
   }
