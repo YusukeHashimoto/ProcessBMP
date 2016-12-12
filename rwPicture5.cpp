@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
 #include <string>
 
@@ -22,9 +23,11 @@ Header::Header(int size, unsigned char image[]) {
 
   char value[16];
   sprintf(value, "%02x%02x%02x%02x", image[21], image[20], image[19], image[18]);
-  width = std::stoi(value, 0, 16);
+  //width = std::stoi(value, 0, 16);
+  width = strtoll(value, 0, 16);
   sprintf(value, "%02x%02x%02x%02x", image[25], image[24], image[23], image[22]);
-  height = std::stoi(value, 0, 16);
+  //height = std::stoi(value, 0, 16);
+  height = strtoll(value, 0, 16);
 }
 
 void Pixel::setRGB(int r, int g, int b) {
