@@ -3,18 +3,17 @@
 #include <iostream>
 #include <string>
 
-//#include "const.hpp"
 #include "ImageScanner.hpp"
 #include "header.hpp"
-//#include "pixel.hpp"
 
 using namespace std;
 
 int readImage(char*);
 int limitRange(int);
 void writeImage(int, Header);
-//void execReverseProjection(int, int, int[], int[]);
 void execReverseProjection(int, int, int[], int[], int[], int[]);
+void init(int[], int);
+double k = 1;
 
 Header::Header(int size, unsigned char image[]) {
   for(int i = 0; i < SIZE_OF_HEADER; i++) {
@@ -23,10 +22,8 @@ Header::Header(int size, unsigned char image[]) {
 
   char value[16];
   sprintf(value, "%02x%02x%02x%02x", image[21], image[20], image[19], image[18]);
-  //width = std::stoi(value, 0, 16);
   width = strtoll(value, 0, 16);
   sprintf(value, "%02x%02x%02x%02x", image[25], image[24], image[23], image[22]);
-  //height = std::stoi(value, 0, 16);
   height = strtoll(value, 0, 16);
 }
 
@@ -38,8 +35,7 @@ void Pixel::setRGB(int r, int g, int b) {
 
 unsigned char rawImage[MAX_SIZE];
 Pixel pixels[MAX_WIDTH][MAX_HEIGHT];
-Pixel sharpenedPixels[MAX_WIDTH][MAX_HEIGHT];
-double k = 1;
+Pixel resultPixels[MAX_WIDTH][MAX_HEIGHT];
 
 int main(int argc, char* argv[]) {
   int size = readImage(argv[1]);
@@ -59,19 +55,23 @@ int main(int argc, char* argv[]) {
 
   ImageScanner *scanner = new ImageScanner(width, height);
   
-  int holResult[height] = {0};
+  int holResult[height];// = {0};
+  init(holResult, height);
   scanner->scanHolizontally(holResult);
-  int verResult[width] = {0};
+  
+  int verResult[width];// = {0};
+  init(verResult, width);
   scanner->scanVertically(verResult);
   
-  int diaResult1[width+height-1] = {0};
+  int diaResult1[width+height-1];// = {0};
+  init(diaResult1, width+height-1);
   scanner->scanDiagonally1(diaResult1);
-  int diaResult2[width+height-1] = {0};
+  
+  int diaResult2[width+height-1];// = {0};
+  init(diaResult2, width+height-1);
   scanner->scanDiagonally2(diaResult2);
   
-  //execReverseProjection(width, height, holResult, verResult);
   execReverseProjection(width, height, holResult, verResult, diaResult1, diaResult2);
-  //cout << width << endl;
   writeImage(size, header);
   return 0;
 }
@@ -95,20 +95,15 @@ void writeImage(int filesize, Header header) {
 
   int width = header.getWidth();
   int height = header.getHeight();
-
+  /*
   cout << width << " " << height << endl;
   cout << width * height * 3<< endl << filesize << endl;
-
+  */
   for(int y = 0; y < height; y++) {
     for(int x = 0; x < width; x++) {
-      fputc(sharpenedPixels[x][y].getB(), fp);//b
-      fputc(sharpenedPixels[x][y].getG(), fp);//g
-      fputc(sharpenedPixels[x][y].getR(), fp);//r
-      /*
-        cout << "(" << (int)sharpenedPixels[x][y].getR()
-        << "," << (int)sharpenedPixels[x][y].getG()
-        << "," << (int)sharpenedPixels[x][y].getB() << ")" << endl;
-      */
+      fputc(resultPixels[x][y].getB(), fp);//b
+      fputc(resultPixels[x][y].getG(), fp);//g
+      fputc(resultPixels[x][y].getR(), fp);//r
     }
   }
   fclose(fp);
@@ -125,9 +120,8 @@ ImageScanner::ImageScanner(int width, int height) {
   this->height = height;
 
   for(int i = 0; i < width; i++) {
-    for(int j = 0; j < height; j++) {
+  for(int j = 0; j < height; j++) {
       this->image[i][j] = pixels[i][j];
-      //this->image[i][j].setRGB(0, 0, 0);
     }
   }
 }
@@ -135,8 +129,8 @@ ImageScanner::ImageScanner(int width, int height) {
 void ImageScanner::scanHolizontally(int result[]) {
   for(int y = 0; y < height; y++) {
     for(int x = 0; x < width; x++) {
-      //result[y] += image[x][y].getY();
-      if(result[y] < image[x][y].getY())
+      //if(result[y] < image[x][y].getY())
+      if(result[y] > image[x][y].getY())
         result[y] = image[x][y].getY();
     }
   }
@@ -147,18 +141,19 @@ void ImageScanner::scanHolizontally(int result[]) {
 void ImageScanner::scanVertically(int result[]) {
   for(int x = 0; x < width; x++) {      
     for(int y = 0; y < height; y++) {
-      if(result[x] < image[x][y].getY()) {
+      //if(result[x] < image[x][y].getY()) {
+        if(result[x] > image[x][y].getY()) {
         result[x] = image[x][y].getY();
       }
     }
-    //cout << result[x] << " ";
   }
 }
 
 void ImageScanner::scanDiagonally1(int result[]) {
   for(int x = 0; x < width+height; x++) {
     for(int j = 0; j < x+1; j++) {
-      if(x-j < width && result[x] < image[x-j][j].getY()) {
+      //if(x-j < width && result[x] < image[x-j][j].getY()) {
+      if(x-j < width && result[x] > image[x-j][j].getY()) {
         result[x] = image[x-j][j].getY();
       }
     }
@@ -174,20 +169,20 @@ void ImageScanner::scanDiagonally1(int result[]) {
 void ImageScanner::scanDiagonally2(int result[]) {
   for(int x = 0; x < width; x++) {
     for(int j = 0; j < x+1 && j < height; j++) {
-      if(result[x] < image[x-j][height-j].getY())
+      //if(result[x] < image[x-j][height-j].getY())
+      if(result[x] > image[x-j][height-j].getY())
         result[x] = image[x-j][height-j].getY();
     }
   }
 }
 
 
-//void execReverseProjection(int width, int height, int holResult[], int verResult[]) {
 void execReverseProjection(int width, int height, int holResult[], int verResult[], int diaResult1[], int diaResult2[]) {
   for(int x = 0; x < width; x++) {
     for(int y = 0; y < height; y++) {
       int value = (holResult[y] + verResult[x] + diaResult1[x+y] + diaResult2[x+height-y]) / 4;
       value = limitRange(value);
-      sharpenedPixels[x][y].setRGB(value, value, value);
+      resultPixels[x][y].setRGB(value, value, value);
     }
   }
 }
@@ -195,4 +190,9 @@ void execReverseProjection(int width, int height, int holResult[], int verResult
 int max(int a, int b) {
   if(a > b) return a;
   else return b;
+}
+
+void init(int array[], int size) {
+  for(int i = 0; i < size; i++)
+    array[i] = 255;
 }
